@@ -14,7 +14,7 @@ These raw datasets were used in the R Markdown script to create the final data p
 | Metchosin Project Metchosin Data.csv	| CSV: Insect biomass and individual count data shared by Freya Innes. |
 | EsquimaltHarbour_ClimateData.csv	| CSV: Daily climate data from Environment Canada. |
 | Traps.csv	| CSV: Insect trap location data. |
-| ZonalHistogram_50m.csv	| CSV: Land cover area within a 50m diameter around each insect trap. |
-| ZonalHistogram_100m.csv	| CSV: Land cover area within a 100m diameter around each insect trap. |
-| ZonalHistogram_250m.csv	| CSV: Land cover area within a 250m diameter around each insect trap. |
-| ZonalHistogram_500m.csv	| CSV: Land cover area within a 500m diameter around each insect trap. |
+| ZonalHistogram_50m.csv	| CSV: Land cover area within a 50m diameter circle around each insect trap. |
+| ZonalHistogram_100m.csv	| CSV: Land cover area within a 100m diameter circle around each insect trap. |
+| ZonalHistogram_250m.csv	| CSV: Land cover area within a 250m diameter circle around each insect trap. |
+| ZonalHistogram_500m.csv	| CSV: Land cover area within a 500m diameter circle around each insect trap. |
