@@ -4,8 +4,8 @@ Table 1: Final Data Products
 | File | Description |
 |---|---|
 | [2024.12.08.MetchBiomass_InsectCounts_Climate_Location_Landcover.csv](https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/2024.12.08.MetchBiomass_InsectCounts_Climate_Location_Landcover.csv) | CSV: Final data product for modeling insect biomass spatiotemporal trends in Metchosin. |
-| 2024.12.08_MetchBiomass.Rmd	| R Markdown: Report accompanying the final data product, for use in RStudio. |
-| 2024.12.08_MetchBiomass.html	| HTML: Report in HTML format, viewable in a web browser after downloading. |
+| [2024.12.08_MetchBiomass.Rmd](https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/2024.12.08_MetchBiomass.Rmd)	| R Markdown: Report accompanying the final data product, for use in RStudio. |
+| [2024.12.08_MetchBiomass.html](https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/2024.12.08_MetchBiomass.html)	| HTML: Report in HTML format, viewable in a web browser after downloading. |
 
 Table 2: These raw datasets were used in the R Markdown script to create the final data products.
 | File | Description |
