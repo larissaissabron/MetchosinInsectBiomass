@@ -1,25 +1,21 @@
-Data Preparation for the Metchosin Insect Biomass Project (2018-2023)
+Data Products - Fall 2024
 
-The data products used within and resulting from data preparation in Fall 2024.
+This repository contains the data products used within and resulting from data preparation efforts in Fall 2024 for analyzing insect biomass spatiotemporal trends in Metchosin.
+Final Data Products
+File	Description
+2024.12.08.MetchBiomass_InsectCounts_Climate_Location_Landcover.csv	CSV: Final data product for modeling insect biomass spatiotemporal trends in Metchosin.
+2024.12.08_MetchBiomass.Rmd	R Markdown: Report accompanying the final data product, for use in RStudio.
+2024.12.08_MetchBiomass.html	HTML: Report in HTML format, viewable in a web browser after downloading.
+Raw Data
 
-+---------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------+
-| File                                                                | Description                                                                                                                      | Link                                                                                                                                      |
-+=====================================================================+==================================================================================================================================+===========================================================================================================================================+
-| 2024.12.08.MetchBiomass_InsectCounts_Climate_Location_Landcover.csv | CSV: The final resulting data product to be used in modelling insect biomass spatiotemporal trends in Metchosin.\                | <https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/2024.12.08.MetchBiomass_InsectCounts_Climate_Location_Landcover.csv> |
-+---------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------+
-| 2024.12.08_MetchBiomass.Rmd                                         | R Markdown: The report that accompanies the final data product in R Markdown format for use in R Studio.                         | <https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/2024.12.08_MetchBiomass.Rmd>                                         |
-+---------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------+
-| 2024.12.08_MetchBiomass.html                                        | HTML: The report that accompanies the final data product in HTML format, to be viewed in an internet browser after downloading.  | <https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/2024.12.08_MetchBiomass.html>                                        |
-+---------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------+
+These raw datasets were used in the R Markdown script to create the final data products.
+File	Description
+Metchosin Project Metchosin Data.csv	CSV: Insect biomass and individual count data shared by Freya Innes.
+EsquimaltHarbour_ClimateData.csv	CSV: Daily climate data from Environment Canada.
+Traps.csv	CSV: Insect trap location data.
+ZonalHistogram_50m.csv	CSV: Land cover area within a 50m diameter around each insect trap.
+ZonalHistogram_100m.csv	CSV: Land cover area within a 100m diameter around each insect trap.
+ZonalHistogram_250m.csv	CSV: Land cover area within a 250m diameter around each insect trap.
+ZonalHistogram_500m.csv	CSV: Land cover area within a 500m diameter around each insect trap.
 
-Raw data that was used in the R Markdown script to create final data products.
-
-| File | Description | Link |
-|----|----|----|
-| Metchosin Project Metchosin Data.csv | CSV: Insect biomass and individual count data shared by Freya Innes. | <https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/Metchosin%20Project%20Metchosin%20Data.csv> |
-| EsquimaltHarbour_ClimateData.csv | CSV: Daily climate data from Environment Canada. | <https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/EsquimaltHarbour_ClimateData.csv> |
-| Traps.csv | CSV: Insect trap location data. | <https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/EsquimaltHarbour_ClimateData.csv> |
-| ZonalHistogram_50m.csv | CSV: Area of land cover categories within 50m diameter circle of each insect trap. | <https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/ZonalHistogram_50m.csv> |
-| ZonalHistogram_100m.csv | CSV: Area of land cover categories within 100m diameter circle of each insect trap. | <https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/ZonalHistogram_100m.csv> |
-| ZonalHistogram_250m.csv | CSV: Area of land cover categories within 250m diameter circle of each insect trap. | <https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/ZonalHistogram_250m.csv> |
-| ZonalHistogram_500m.csv | CSV: Area of land cover categories within 500m diameter circle of each insect trap. | <https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/ZonalHistogram_500m.csv> |
+This approach reduces redundancy and ensures a clean, professional look. Let me know if further edits are needed!
