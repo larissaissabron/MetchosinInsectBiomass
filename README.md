@@ -1,2 +1,1 @@
-# MetchosinInsectBiomass
-Data preparation for modelling temporal insect biomass trends in Metchosin between 2018 to 2023. 
+# Data Preparation for the Metchosin Insect Biomass Project (2018-2023)
