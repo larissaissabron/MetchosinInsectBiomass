@@ -1,0 +1,1605 @@
+---
+title: "Data Preparation for the Metchosin Insect Biomass Project (2018-2023)"
+author: "Created by: Larissa Bron"
+project: "BIOL490B: GIS for Insect Biodiversity"
+date: "Date: 2024-12-08"
+output:
+  html_document:
+    code_folding: hide
+---
+
+## Introduction {#sec-introduction}
+
+This report describes the methods used to locate, clean, and collate data for the Metchosin Insect Biomass Project (2018-2023), as completed during a Directed Studies project by Larissa Bron in Fall 2024. The format of this report is R Markdown which integrates the research narrative with embedded code and data outputs. Note: *Click the "show" button on the right side of the document if you want to see the code used to generate any of the outputs.*
+
+The motivation for this directed studies project was to find data that could be used to help explain the spatiotemporal variation in insect biomass in Metchosin using mathematical modelling, building onto the work of previous student researchers (e.g. Innes (2024) and Nikel (2019)). Student research has contributed to understanding the variation in insect biomass in Metchosin by testing explanatory variables (Nikel, 2019) and considering whether significant differences exist between insect collection traps or sampling years (Innes, 2024).
+
+> Nikel (2019) assessed whether elevation, spatial (distance from collection trap to coastline or urban area), or temporal (collection period) explanatory variables could be attributed to insect biomass counts in 2018. The short sampling period (one year) and coarse spatial variables contributed to low explanatory value.
+>
+> Innes (2024) illustrated trends in biomass compared between insect orders, trap number, and time using descriptive statistics. This resulted in highlighting the greatest contribution to biomass was from Diptera and Hymenoptera. As well, significance testing with Kruskal-Wallis and Dunn tests was used to consider differences between yearly and monthly sampling intervals between 2018 and 2022. The result from significance testing was no significant difference between years, and some significance between summer and fall months.
+
+Still, the question remains: What factors are contributing to the differences in insect biomass observed in Metchosin between 2018-2023? To answer this, I sourced publicly accessible 1 metre resolution land cover data (Capital Regional District) and daily climate data (Environment Canada), then cleaned and aggregated this data in different compositions to answer this question from a variety of perspectives relevant to insect biodiversity and conservation.
+
+## Selecting Variables for Modelling
+
+I conducted a mini literature review spanning recent academic literature that explores, experiments on, and observes insect biomass trends globally. The results of this literature review were used to identify the categories of threats to insects, which in turn were then used to guide a data search to source explanatory variables for modelling insect trends observed between 2018 to 2023.
+
+### Primary Threats to Insects
+
+The primary threats to insects are habitat loss, chemical and light pollution, pathogens and introduced species, and climate change (Bluthgen et al., 2022; Müller et al., 2024; Uhler et al., 2021). These threats were used to guide a review of available public data to assess potential covariates for modelling (Table 1).
+
+**Table 1: Publicly accessible data relating to the primary threats to insects.**
+
++--------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Threat to Insects**                | **Available Data**                                                                                                                                                                    |
++--------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Habitat Loss**                     | **Land Cover**                                                                                                                                                                        |
+|                                      |                                                                                                                                                                                       |
+|                                      | -   Capital Regional District (<https://www.crd.bc.ca/about/data/geospatial-data>).                                                                                                   |
+|                                      | -   Government of Canada (<https://open.canada.ca/data/en/dataset/ee1580ab-a23d-4f86-a09b-79763677eb47>).                                                                             |
++--------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                      | **Protected Areas**                                                                                                                                                                   |
+|                                      |                                                                                                                                                                                       |
+|                                      | -   Canadian Protected and Conserved Areas Database (<https://www.canada.ca/en/environment-climate-change/services/national-wildlife-areas/protected-conserved-areas-database.html>). |
+|                                      | -   British Columbia Non-Governmental Organizations Protected Conservation Lands (<https://catalogue.data.gov.bc.ca/dataset/ngo-conservation-areas-fee-simple>).                      |
+|                                      | -   National Parks (<https://open.canada.ca/data/en/dataset/e1f0c975-f40c-4313-9be2-beb951e35f4e>).                                                                                   |
+|                                      | -   Regional Parks (<https://www.crd.bc.ca/about/data/geospatial-data>).                                                                                                              |
+|                                      | -   Provincial Protected Areas (<https://catalogue.data.gov.bc.ca/dataset/68327529-c0d5-4fcb-b84e-f8d98a7f8612>).                                                                     |
++--------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                      | **Proximity to Water**                                                                                                                                                                |
+|                                      |                                                                                                                                                                                       |
+|                                      | -   British Columbia Freshwater Atlas (<https://www2.gov.bc.ca/gov/content/data/geographic-data-services/topographic-data/freshwater>).                                               |
++--------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Pollution**                        | **Light Pollution**                                                                                                                                                                   |
+|                                      |                                                                                                                                                                                       |
+|                                      | -   Earth Observation Group (<https://eogdata.mines.edu/products/vnl/>).                                                                                                              |
++--------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                      | **Agricultural Output**                                                                                                                                                               |
+|                                      |                                                                                                                                                                                       |
+|                                      | -   Government of Canada (<https://agriculture.canada.ca/en/agricultural-production/geospatial-products>).                                                                            |
++--------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Pathogens and Introduced Species** | Not easily accessible, potentially vague.                                                                                                                                             |
++--------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Climate Change**                   | **Weather**                                                                                                                                                                           |
+|                                      |                                                                                                                                                                                       |
+|                                      | -   Environment Canada - daily climate data for precipitation, temperature, and wind speed (<https://climate-change.canada.ca/climate-data/#/daily-climate-data>).                    |
++--------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+The research team reviewed the available data (Table 1) and chose climate and habitat as explanatory variable categories for modelling. I then revisited the literature review to assess how researchers incorporate weather and land cover data into modelling (Table 2).
+
+**Table 2: Insect research that incorporates climate and landscape variables in modelling.**
+
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Research**                  | **Climate and Weather**                                                                                                                                                       | **Landscape and Habitat**                                                                                                                                                                        |
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Gebert et al. (2023)**      | Temperature and precipitation.                                                                                                                                                | Yearly mean, median, minimum, and standard deviation of NDVI (Normalized Difference Vegetation Index) at buffers of 50 metres and 200 metres to assess vegetation cover and vegetation activity. |
+|                               |                                                                                                                                                                               |                                                                                                                                                                                                  |
+|                               | Mean and standard deviation for both were calculated from March to July using monthly data.                                                                                   |                                                                                                                                                                                                  |
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Hallmann et al. (2017)**    | Mean daily temperature, precipitation, and wind speed decomposed into long-term average trends (between years), mean seasonal trends, and yearly seasonal anomaly components. | Land use and change over time derived from aerial photos between 1989-1994 and 2012-2015 at a 200 metre radius.\                                                                                 |
+|                               |                                                                                                                                                                               | \                                                                                                                                                                                                |
+|                               | Number of frost days and sum of precipitation in the months November-February preceding a sampling season.                                                                    | Land use: forest, agricultural area, natural grassland, and surface water.                                                                                                                       |
+|                               |                                                                                                                                                                               |                                                                                                                                                                                                  |
+|                               |                                                                                                                                                                               | Habitat data: plant inventories within 50 metres for plant species richness each year.                                                                                                           |
+|                               |                                                                                                                                                                               |                                                                                                                                                                                                  |
+|                               |                                                                                                                                                                               | Ellenberg nitrogen, pH, light, temperature, and moisture each year.                                                                                                                              |
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Hallmann et al. (2019)**    | Temperature, the sum of precipitation, mean relative moisture content, and mean wind speed.                                                                                   | n/a                                                                                                                                                                                              |
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Li and Wilkins (2022)**     | Temperature.                                                                                                                                                                  | Spatial complexity (open versus cluttered).                                                                                                                                                      |
+|                               |                                                                                                                                                                               |                                                                                                                                                                                                  |
+|                               | Wind speed was considered but not found relevant.                                                                                                                             | Considered but irrelevant: site distance to water, number of trees within a 50 kilometre radius, site ground cover (concrete versus soil), and site distance to interstate highway.              |
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Müller et al. (2024)**      | The weather during the sampling period: temperature, precipitation.                                                                                                           | Number of herb species and tree species.                                                                                                                                                         |
+|                               |                                                                                                                                                                               |                                                                                                                                                                                                  |
+|                               | Weather anomalies for temperature and precipitation of: winter, April current, April previous, and month previous.                                                            | Ellenberg value for light and temperature.                                                                                                                                                       |
+|                               |                                                                                                                                                                               |                                                                                                                                                                                                  |
+|                               |                                                                                                                                                                               | The proportion of arable land, forest, grassland, and water.                                                                                                                                     |
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Seibold et al. (2019)**     | Mean winter temperature and precipitation during the growing period.                                                                                                          | Cover of arable fields and grasslands within 1000 metres.                                                                                                                                        |
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Svenningsen et al. (2024)** | n/a                                                                                                                                                                           | Urban and farmland cover within 1000 metres on each side of the road (vehicle sampling).                                                                                                         |
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Uhler et al. (2021)**       | Temperature and humidity at local scale.\                                                                                                                                     | Land use is aggregated at local and landscape scales.                                                                                                                                            |
+|                               | \                                                                                                                                                                             |                                                                                                                                                                                                  |
+|                               | Annual mean temperature and precipitation for macro scale.                                                                                                                    |                                                                                                                                                                                                  |
+|                               |                                                                                                                                                                               |                                                                                                                                                                                                  |
+|                               | Climate normals and deviations.                                                                                                                                               |                                                                                                                                                                                                  |
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Uphus et al. (2023)**       | Mean temperature from March and April, and the average daily mean air temperature and humidity.                                                                               | Spring green-up for 100, 200, 500, 1000, 2000, and 3000 metres around each plot.                                                                                                                 |
+|                               |                                                                                                                                                                               |                                                                                                                                                                                                  |
+|                               |                                                                                                                                                                               | Land use: forest, grassland, cropland, urbanized areas.                                                                                                                                          |
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Welti et al. (2021)**       | Monthly means of maximum and minimum temperatures and monthly cumulative precipitation.                                                                                       | Land use: urban, intensive agriculture, non-irrigated agriculture, pasture/orchard, forest, grassland/shrubland, freshwater, and saltwater.                                                      |
+|                               |                                                                                                                                                                               |                                                                                                                                                                                                  |
+|                               |                                                                                                                                                                               | Elevation.                                                                                                                                                                                       |
++-------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+The research team then met to discuss incorporating climate and land cover data into modelling. We considered land cover extracted at increasing spatial scales (e.g. Gebert et al., 2023; Seibold et al., 2019; Svenningsen et al., 2024; Uhler et al., 2021) and weather data aggregated in different temporal configurations (e.g. Müller 2024; Seibold et al., 2019; Welti et al., 2021). The resulting land cover and weather variables were chosen for correlation testing and model building:
+
+-   **Climate** (daily weather station data (Environment Canada))
+    -   Sampling Period (“Month” which is biweekly sample collection)
+        -   Mean of the mean daily temperature.
+        -   Mean maximum daily temperature.
+        -   Mean minimum daily temperature.
+        -   Mean daily total precipitation.
+        -   Mean maximum daily wind gust.
+        -   Total precipitation.
+    -   Year
+        -   Mean daily temperature.
+
+        -   Number of days below 0°C.
+
+        -   Number of days above 25°C.
+
+        -   Total precipitation.
+
+        -   Previous year winter precipitation (November-February).
+
+        -   Previous year winter temperature (November-February).
+
+        -   Current year growing season precipitation (March-October).
+-   **Land Cover** (1 metre resolution land cover mapping (Capital Regional District)
+    -   Extracted at 50, 100, 250, and 500 metre (circle diameter) buffers around each insect trap.
+
+## Acquisition and Preparation of Data {#sec-acquisition-and-preparation-of-data}
+
+The following sections of the report are in R Markdown format - describing the steps involved in accessing, preparing, and collating climate and land cover data for use as explanatory variables in modelling to help explain spatiotemporal insect biomass trends.
+
+The next two code chunks correspond to preparing the R environment for data work.
+
+```{r Setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Install Packages, eval=FALSE, results = 'false', message=FALSE, warning=FALSE}
+install.packages("tidyverse")
+install.packages("dplyr")
+install.packages("lubridate")
+install.packages("purr")
+install.packages("PerformanceAnalytics")
+```
+
+```{r Load Packages,  results = 'false', message=FALSE, warning=FALSE}
+library("tidyverse") # keep things working together nicely
+library("dplyr") # keep things working together nicely 
+library("lubridate") # date data support
+library("purrr") # iteration
+library('PerformanceAnalytics') # for correlation matrix
+
+```
+
+## Uploading Data {#sec-uploading-data}
+
+### Metchosin Insect Count Data {#sec-metchosin-insect-count-data}
+
+This insect count data was prepared by Freya Innes and then Larissa Bron manually added the beginning and end of biweekly sampling intervals (range_begin, range_end) in Excel, resulting in the Insect Count Data (<https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/Metchosin%20Project%20Metchosin%20Data.csv>).
+
++------------------+---------------------------------------------------------------------------------------------------------------+
+| **Variable**     | **Description**                                                                                               |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| trap_number      | Malaise trap site number                                                                                      |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| year             | Year insects collected in trap                                                                                |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| month            | Biweekly sampling interval in which insects were collected in trap                                            |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| range_begin      | First day of the biweekly sampling interval, "month"                                                          |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| range_end        | Last day of the biweekly sampling interval, "month"                                                           |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| collection_date  | Date the insect trap contents from the preceding biweekly collection interval were collected                  |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| group            | Major flying insect orders, one of: Hymenoptera, Diptera, Lepidoptera, Hemiptera, Coleoptera, or Other        |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| biomass          | Biomass measured per insect order ("group")                                                                   |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| biomass_total    | Biomass summed for all insect orders ("groups") per biweekly sampling interval ("month")                      |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| percent_biomass  | Contribution of each insect order ("group") to the total biomass per biweekly sampling interval ("month")     |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| individual_count | Number of individual insects counted for each insect order ("group") per biweekly sampling interval ("month") |
++------------------+---------------------------------------------------------------------------------------------------------------+
+| count_total      | Individual count summed for all insect orders ("groups") per biweekly sampling interval ("month")             |
++------------------+---------------------------------------------------------------------------------------------------------------+
+
+The insect count data was uploaded to R and prepared to streamline the workflow. Descriptions of the insect count data follow.
+
+```{r}
+# Import .csv file of insect count data
+insect_counts <- read_csv("data/Metchosin Project Metchosin Data.csv") %>% 
+  # change all column names to be lower case to assist in joining and working between datasets later
+    setNames(
+    names(.) %>% 
+      tolower()) %>% 
+  # convert trap_number to a factor so that it is labelled appropriately in graphics
+  mutate_at(c('trap_number'), as.factor)
+
+# Change the format of collection date to be what r recognizes as dates
+insect_counts <- insect_counts %>% 
+  mutate(collection_date = dmy(collection_date)) 
+
+# Separate collection date components to get a month for calculating monthly climate data
+insect_counts <- insect_counts %>% 
+  separate(collection_date, c('collect_year', 'collect_month', 'collect_day'), sep = "-",remove = FALSE)
+
+# year, month, day to numeric instead of character
+insect_counts$collect_year <- as.numeric(insect_counts$collect_year)
+insect_counts$collect_month <- as.numeric(insect_counts$collect_month)
+insect_counts$collect_day <- as.numeric(insect_counts$collect_day)
+
+# change format from a dataframe to tibble to assist R in working with large dataset 
+as_tibble(insect_counts)
+
+# check out imported data to make sure nothing obviously wrong
+summary(insect_counts)
+str(insect_counts)
+```
+
+Visualization to confirm that both the biomass and individual counts are following expected trends. Trends should include: all orders represented, as well as each trap and year having a similar range of values.
+
+```{r}
+# plot trap number vs. biomass
+ggplot(
+  # data into the ggplot
+  data = insect_counts,
+  mapping = aes(x = trap_number, y = biomass)
+) +
+  # scatterplot
+  geom_point() +
+  # label
+  labs(
+    x = "Trap Number",
+    y = "Biomass (g)",
+    color = "Order",
+    title = "Biomass as a Function of Trap Number Compared Between Insect Orders"
+  ) +
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  # present in a grid
+  facet_wrap(group ~ ., scales = 'free', ncol=2)
+
+# plot trap number vs. individual count
+ggplot(
+  # data into the ggplot
+  data = insect_counts,
+  mapping = aes(x = trap_number, y = individual_count)
+) +
+  # scatterplot 
+  geom_point() +
+  # label
+    labs(
+    x = "Trap Number",
+    y = "Individual Count",
+    color = "Order",
+    title = "Individual Count as a Function of Trap Number Compared Between Insect Orders"
+  ) +
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  # present in a grid
+  facet_wrap(group ~ ., scales = 'free', ncol=2)
+
+# plot year vs. biomass
+ggplot(
+  # data into the plot
+  data = insect_counts,
+  mapping = aes(x = year, y = biomass)
+) +
+  # scatter plot
+  geom_point() +
+  # label
+    labs(
+    x = "Year",
+    y = "Biomass",
+    color = "Order",
+    title = "Biomass as a Function of Year Compared Between Insect Orders"
+  ) +
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  # present in a grid
+  facet_wrap(group ~ ., scales = 'free', ncol=2)
+
+# plot year vs. individual count
+ggplot(
+  # data into plot
+  data = insect_counts,
+  mapping = aes(x = year, y = individual_count)
+) +
+  # scatterplot
+  geom_point() +
+  # label
+  labs(
+    x = "Year",
+    y = "Individual Count",
+    color = "Order",
+    title = "Individual Count as a Function of Year Compared Between Insect Orders"
+  ) +
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  # present in a grid
+  facet_wrap(group ~ ., scales = 'free', ncol=2)
+
+```
+
+### Climate Data {#sec-climate-data}
+
+The Pacific Climate Impacts Consortium British Columbia Station Data Explorer (<https://services.pacificclimate.org/met-data-portal-pcds/app/>) was used to locate a relevant Environment Canada weather station for the District of Metchosin.
+
+![](images/clipboard-2473694244.png)
+
+Figure: The location of three relevant Environment Canada weather stations within and near the District of Metchosin.
+
+The Metchosin and William Head weather stations within Metchosin boundaries were missing values of interest, either weather variables or time series, and as such were excluded. The Esquimalt Harbour (Station ID 1012710) was selected as the nearest location.
+
+Daily weather data was downloaded from Environment Canada (<https://climate-change.canada.ca/climate-data/#/daily-climate-data>) for the Esquimalt Harbour weather station between January 1, 2017 and December 31, 2023. This data was then manually prepared in Excel by removing all irrelevant data, resulting in the Climate Data file (<https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/EsquimaltHarbour_ClimateData.csv>).
+
++---------------------+------------+---------------------------------------------------------------------+
+| Variable            | Units      | Description                                                         |
++:====================+:===========+:====================================================================+
+| id                  | n/a        | Trap number, year, month, day (format of trapnumber.year.month.day) |
++---------------------+------------+---------------------------------------------------------------------+
+| min_temperature     | °C         | Minimum daily temperature                                           |
++---------------------+------------+---------------------------------------------------------------------+
+| max_temperature     | °C         | Maximum daily temperature                                           |
++---------------------+------------+---------------------------------------------------------------------+
+| mean_temperature    | °C         | Mean daily temperature                                              |
++---------------------+------------+---------------------------------------------------------------------+
+| total_precipitation | mm         | Total daily precipitation                                           |
++---------------------+------------+---------------------------------------------------------------------+
+| speed_max_gust      | km/h       | Speed of the daily maximum wind gust                                |
++---------------------+------------+---------------------------------------------------------------------+
+
+The climate data was uploaded to R and prepared for analysis.
+
+```{r}
+# Import .csv file of climate data.
+climate <- read_csv("data/EsquimaltHarbour_ClimateData.csv") %>% 
+    # change all column names to be lower case to assist in joining and working between datasets
+    setNames(
+    names(.) %>% 
+      tolower()) %>% 
+  # rename columns for clarity in future aggregations of climate data by distinguishing this as daily data.
+  rename(
+    daily_min_temp = min_temperature,
+    daily_max_temp = max_temperature,
+    daily_mean_temp = mean_temperature,
+    daily_tot_precip = total_precipitation,
+    daily_max_gust = speed_max_gust
+  )
+
+# change format from dataframe to tibble to assist R in working with large dataset
+as_tibble(climate)
+
+# Check out imported data to make sure nothing obviously wrong
+summary(climate)
+str(climate)
+
+```
+
+Climate data was further manipulated to streamline the workflow for aggregating climate variables of interest in later steps.
+
+```{r}
+# Updating the climate dataframe.
+climate <- climate %>% 
+  # separate ID into it's component parts
+  separate(id, c('station_id', 'year', 'month', 'day')) %>% 
+  # remove original ID column
+  select(-1) %>% 
+  # get date into a format that is easier to work with in R
+  mutate(date = make_date(year, month, day)) %>% 
+  # make date the first column
+  relocate(date) %>% 
+  # remove working columns for year, month, and date
+  select(-2, -3, -4) 
+
+# find missing dates and add to dataframe with NAs (ChatGPT support to find out how to look for and fill in missing dates)
+
+# look for missing dates. Generate a full sequence of dates from the minimum to maximum in the dataset
+full_dates <- data.frame(date = seq(min(climate$date), max(climate$date), by = "day")) 
+
+# Identify missing dates by performing an anti_join
+missing_dates <- anti_join(full_dates, climate, by = "date")
+
+# Add missing dates to climate dataframe
+climate <- climate %>% 
+  right_join(full_dates, by = "date") 
+
+# Re-update the climate dataframe by separating out the year, month, and day
+climate <- climate %>% 
+  # separate ID into it's component parts
+  separate(date, c('year', 'month', 'day')) %>% 
+  # get date into a format that is easier to work with in R
+  mutate(date = make_date(year, month, day)) %>% 
+  # make date the first column
+  relocate(date) 
+  
+# View updated climate data
+print(climate)
+
+# Confirm that nothing weird since updates to climate data
+summary(climate)
+str(climate)
+
+```
+
+Visualization to confirm that daily recorded values make sense when compared across years.
+
+```{r, results = 'false', message=FALSE, warning=FALSE}
+# daily mean temperature
+ggplot(
+  # add data
+  data = climate, 
+  mapping = aes(x = month, y = daily_mean_temp, na.rm = TRUE)) + 
+  # scatterplot
+  geom_point() +
+  # label
+  labs(
+    x = "Month",
+    y = "Daily Mean Temperature (°C)",
+    title = "Daily Mean Temperature Summarized by Month (2017-2023)"
+  ) +
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  # abbreviate month names on x-axis
+  scale_x_discrete(labels = month.abb) + 
+  # present in a grid
+  facet_wrap(year ~ ., scales = 'free', ncol=4)
+
+# daily minimum temperature
+ggplot(
+  # add data
+  data = climate, 
+  mapping = aes(x = month, y = daily_min_temp, na.rm = TRUE)) + 
+  # scatterplot
+  geom_point() +
+  # label
+  labs(
+    x = "Month",
+    y = "Daily Minimum Temperature (°C)",
+    title = "Daily Minimum Temperature Summarized by Month (2017-2023)"
+  ) +
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  # abbreviate month names on x-axis
+  scale_x_discrete(labels = month.abb) + 
+  # present in a grid
+  facet_wrap(year ~ ., scales = 'free', ncol=4)
+
+# daily maximum temperature
+ggplot(
+  # add data
+  data = climate, 
+  mapping = aes(x = month, y = daily_max_temp, na.rm = TRUE)) + 
+  # scatterplot
+  geom_point() +
+  # label
+  labs(
+    x = "Month",
+    y = "Daily Maximum Temperature (°C)",
+    title = "Daily Maximum Temperature Summarized by Month (2017-2023)"
+  ) +
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  # abbreviate month names on x-axis
+  scale_x_discrete(labels = month.abb) + 
+  # present in a grid
+  facet_wrap(year ~ ., scales = 'free', ncol=4)
+
+# daily total precipitation
+ggplot(
+  # add data
+  data = climate, 
+  mapping = aes(x = month, y = daily_tot_precip, na.rm = TRUE)) + 
+  # scatterplot
+  geom_point() +
+  # label
+  labs(
+    x = "Month",
+    y = "Daily Total Precipitation (mm)",
+    title = "Daily Total Precipitation Summarized by Month (2017-2023)"
+  ) +
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  # abbreviate month names on x-axis
+  scale_x_discrete(labels = month.abb) + 
+  # present in a grid
+  facet_wrap(year ~ ., scales = 'free', ncol=4)
+
+# daily maximum wind gust
+ggplot(
+  # add data
+  data = climate, 
+  mapping = aes(x = month, y = daily_max_gust, na.rm = TRUE)) + 
+  # scatterplot
+  geom_point() +
+  # label
+  labs(
+    x = "Month",
+    y = "Daily Maximum Wind Gust (km/hr)",
+    title = "Daily Maximum Wind Gust Summarized by Month (2017-2023)"
+  ) +
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  # abbreviate month names on x-axis
+  scale_x_discrete(labels = month.abb) + 
+  # present in a grid
+  facet_wrap(year ~ ., scales = 'free', ncol=4)
+
+```
+
+### Insect Trap Location Data {#sec-insect-trap-location-data}
+
+The insect trap location data file was created by Annika Meije and then Larissa Bron converted the location coordinates to degrees, minutes, seconds in QGis, resulting in Traps Data file (<https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/Traps.csv>).
+
+![](images/clipboard-2624781315.png){width="486"}
+
+Figure: The location of the Metchosin Insect Biomass Project within the spatial context Vancouver Island, the Salish Sea, and the west coast of British Columbia and Washington.
+
+![](images/clipboard-1078289965.png){width="486"}
+
+Figure: The 20 insect trap locations spread throughout the District of Metchosin.
+
+The insect trap location data was loaded into R.
+
+```{r}
+# Import .csv file of trap location data. 
+traps <- read.csv("data/Traps.csv", fileEncoding = "UTF-8") 
+
+# change format from dataframe to tibble to assist R in working with large dataset
+as_tibble(traps)
+
+# change trap number to be a factor
+traps$trap_number <- as.factor(traps$trap_number)
+
+# Check out imported data to make sure nothing obviously wrong
+summary(traps)
+str(traps)
+```
+
+### Land Cover Data {#sec-land-cover-data}
+
+The Traps.csv file was uploaded to QGis along with the Capital Regional District 1m Resolution Land Cover Raster Data (<https://www.crd.bc.ca/about/data/geospatial-data>) to extract land cover at buffers of 50, 100, 250, and 500 metres around each insect trap
+
+Steps:
+
+1.  Mapping projection set as WGS 84/UTM Zone 10N to allow distance calculation using meters (instead of degrees).
+
+2.  The symbology of the land cover data was updated in QGis to reflect the labels provided in the Land Cover Data Report (<https://maps.crd.bc.ca/Media/Reports/Land%20Cover%202017-2019%20LiDAR%20Enhanced%20Version.zip>).
+
+    ![](images/clipboard-3868436860.png){width="649"}
+
+3.  The land cover data layer was clipped near the Metchosin boundary to limit rendering and processing power required to work with the file.
+
+    ![](images/clipboard-494748793.png){width="486"}
+
+4.  Circles with diameter 50, 100, 250, and 500 metres, "buffers," were created around each insect trap using the Buffer tool in QGis.
+
+    ![](images/clipboard-3339044932.png){width="486"}
+
+5.  For each buffer, the Raster Calculator tool in QGis was used to calculate the number of pixels of each land cover category contained within each buffer, the total number of pixels within each buffer, and to aggregate separately the anthropogenic and natural features.
+
+6.  The resulting .csv file for each buffer was then exported from QGis and imported into R.
+
+The land cover data extracted at each buffer size in meters is available:
+
+-   50 (<https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/ZonalHistogram_50m.csv>)
+-   100 (<https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/ZonalHistogram_100m.csv>)
+-   250 (<https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/ZonalHistogram_250m.csv>)
+-   500 (<https://github.com/larissaissabron/MetchosinInsectBiomass/blob/main/ZonalHistogram_500m.csv>)
+
+```{r}
+# Import .csv files for land cover data extracted at 50, 100, 250, and 500 metre buffers
+
+# 50 meter buffer around each insect trap
+landcover_50m <- read.csv("data/ZonalHistogram_50m.csv") %>% 
+  # remove lat and long because redundant
+  select(-2, -3) %>% 
+  # rename land cover columns so they are easier to work with
+  rename(
+    trap_number = Id,
+    exposed_soil = HISTO_7,
+    grass = HISTO_8,
+    herb = HISTO_9,
+    shrub_small_tree = HISTO_10,
+    deciduous_tree = HISTO_11,
+    coniferous_tree = HISTO_12,
+    pavement_packed_gravel = HISTO_14,
+    road = HISTO_15,
+    buildings = HISTO_16,
+    agriculture = HISTO_17,
+    exposed_bedrock = HISTO_18
+    ) %>% 
+  # add a column for the size of the buffer
+  mutate(buffer = 50) %>% 
+  # total number of pixels (each pixel is 1m x 1m, so it is equivalent to area)
+  mutate(total_area = exposed_soil + grass + herb + shrub_small_tree + deciduous_tree + coniferous_tree + pavement_packed_gravel + road + buildings + agriculture + exposed_bedrock) %>% 
+  # total natural 
+  mutate(natural = exposed_soil + grass + herb + shrub_small_tree + deciduous_tree + coniferous_tree + exposed_bedrock) %>%
+  # total anthropogenic
+    mutate(anthropogenic = pavement_packed_gravel + road + buildings + agriculture)
+
+# 100 meter buffer
+landcover_100m <- read.csv("data/ZonalHistogram_100m.csv") %>% 
+  # remove lat and long because redundant
+  select(-2, -3) %>% 
+  # rename landcover columns so they are easier to work with
+  rename(
+    trap_number = Id,
+    ocean = HISTO_1,
+    lake = HISTO_2,
+    exposed_soil = HISTO_7,
+    grass = HISTO_8,
+    herb = HISTO_9,
+    shrub_small_tree = HISTO_10,
+    deciduous_tree = HISTO_11,
+    coniferous_tree = HISTO_12,
+    pavement_packed_gravel = HISTO_14,
+    road = HISTO_15,
+    buildings = HISTO_16,
+    agriculture = HISTO_17,
+    exposed_bedrock = HISTO_18,
+    aq_vegetation = HISTO_22) %>% 
+  # add a column for the size of the buffer
+  mutate(buffer = 100) %>% 
+  # total number of pixels (each pixel is 1m x 1m, so it is equivalent to area)
+  mutate(total_area = ocean + lake + exposed_soil + grass + herb + shrub_small_tree + deciduous_tree + coniferous_tree + pavement_packed_gravel + road + buildings + agriculture + exposed_bedrock + aq_vegetation) %>% 
+  # total natural 
+  mutate(natural = ocean + lake + exposed_soil + grass + herb + shrub_small_tree + deciduous_tree + coniferous_tree + exposed_bedrock + aq_vegetation) %>%
+  # total anthropogenic
+    mutate(anthropogenic = pavement_packed_gravel + road + buildings + agriculture)
+
+# 250 meter buffer
+landcover_250m <- read.csv("data/ZonalHistogram_250m.csv") %>% 
+  # remove lat and long because redundant
+  select(-2, -3) %>% 
+  # rename landcover columns so they are easier to work with
+  rename(
+    trap_number = Id,
+    ocean = HISTO_1,
+    lake = HISTO_2,
+    sand_gravel_shore = HISTO_5,
+    bedrock_shore = HISTO_6,
+    exposed_soil = HISTO_7,
+    grass = HISTO_8,
+    herb = HISTO_9,
+    shrub_small_tree = HISTO_10,
+    deciduous_tree = HISTO_11,
+    coniferous_tree = HISTO_12,
+    docks = HISTO_13,
+    pavement_packed_gravel = HISTO_14,
+    road = HISTO_15,
+    buildings = HISTO_16,
+    agriculture = HISTO_17,
+    exposed_bedrock = HISTO_18,
+    aq_vegetation = HISTO_22) %>% 
+  # add a column for the size of the buffer
+  mutate(buffer = 250) %>% 
+  # total number of pixels (each pixel is 1m x 1m, so it is equivalent to area)
+  mutate(total_area = ocean + lake + sand_gravel_shore + bedrock_shore + exposed_soil + grass + herb + shrub_small_tree + deciduous_tree + coniferous_tree + docks + pavement_packed_gravel + road + buildings + agriculture + exposed_bedrock + aq_vegetation) %>% 
+  # total natural 
+  mutate(natural = ocean + lake + sand_gravel_shore + bedrock_shore + exposed_soil + grass + herb + shrub_small_tree + deciduous_tree + coniferous_tree + exposed_bedrock + aq_vegetation) %>%
+  # total anthropogenic
+    mutate(anthropogenic = docks + pavement_packed_gravel + road + buildings + agriculture)
+  
+# 500 meter buffer  
+landcover_500m <- read.csv("data/ZonalHistogram_500m.csv") %>% 
+    # remove lat and long because redundant
+  select(-2, -3) %>% 
+  # rename landcover columns so they are easier to work with
+  rename(
+    trap_number = Id,
+    ocean = HISTO_1,
+    lake = HISTO_2,
+    sand_gravel_shore = HISTO_5,
+    bedrock_shore = HISTO_6,
+    exposed_soil = HISTO_7,
+    grass = HISTO_8,
+    herb = HISTO_9,
+    shrub_small_tree = HISTO_10,
+    deciduous_tree = HISTO_11,
+    coniferous_tree = HISTO_12,
+    docks = HISTO_13,
+    pavement_packed_gravel = HISTO_14,
+    road = HISTO_15,
+    buildings = HISTO_16,
+    agriculture = HISTO_17,
+    exposed_bedrock = HISTO_18,
+    aq_vegetation = HISTO_22,
+    loose_gravel = HISTO_24) %>% 
+  # add a column for the size of the buffer
+  mutate(buffer = 500) %>% 
+  # total number of pixels (each pixel is 1m x 1m, so it is equivalent to area)
+  mutate(total_area = ocean + lake + sand_gravel_shore + bedrock_shore + exposed_soil + grass + herb + shrub_small_tree + deciduous_tree + coniferous_tree + docks + pavement_packed_gravel + road + buildings + agriculture + exposed_bedrock + aq_vegetation + loose_gravel) %>% 
+  # total natural 
+  mutate(natural = ocean + lake + sand_gravel_shore + bedrock_shore + exposed_soil + grass + herb + shrub_small_tree + deciduous_tree + coniferous_tree + exposed_bedrock + aq_vegetation + loose_gravel) %>%
+  # total anthropogenic
+    mutate(anthropogenic = docks + pavement_packed_gravel + road + buildings + agriculture)
+
+# join together the landcover data
+landcover <- bind_rows(landcover_50m, landcover_100m, landcover_250m, landcover_500m)
+
+# adjust the landcover data
+landcover <- landcover %>% 
+  # Make all NAs to 0s
+  replace(is.na(landcover), 0) %>% 
+  relocate(buffer, .after = trap_number) %>% 
+  relocate(total_area, .after = buffer) 
+
+# update trap number to be a factor
+landcover$trap_number <- as.factor(landcover$trap_number)
+
+# Check out imported data to make sure nothing obviously wrong
+summary(landcover)
+str(landcover)
+```
+
+Visualization to confirm that the land cover data looks like it is spread across the insect trap sites at all four buffer sizes.
+
+```{r}
+# Create custom colour pallet for land cover types
+landcover_colors <- c(
+  "exposed_soil" = "#6e554a",
+  "grass" = "#5c8a0e",
+  "herb" = "#aae651",
+  "shrub_small_tree" = "#539f6b",
+  "deciduous_tree" = "#b6b639",
+  "coniferous_tree" = "#0d3e05",
+  "pavement_packed_gravel" = "#7d9693",
+  "road" = "#565860",
+  "buildings" = "#3e392e",
+  "agriculture" = "#df974d",
+  "exposed_bedrock" = "#b0b2b2",
+  "ocean" = "#2b37df",
+  "lake" = "#1899c8",
+  "aq_vegetation" = "#81c298",
+  "sand_gravel_shore" = "#dddd82",
+  "bedrock_shore" = "#60657b",
+  "docks" = "#1a1e1b",
+  "loose_gravel" = "#646462"
+)
+
+# Create custom names for land cover labelling
+landcover_names <- c(
+  "exposed_soil" = "Exposed Soil",
+  "grass" = "Grass",
+  "herb" = "Herb",
+  "shrub_small_tree" = "Shrubs",
+  "deciduous_tree" = "Deciduous Tree",
+  "coniferous_tree" = "Coniferous Tree",
+  "pavement_packed_gravel" = "Pavement",
+  "road" = "Road",
+  "buildings" = "Buildings",
+  "agriculture" = "Agriculture",
+  "exposed_bedrock" = "Exposed Bedrock",
+  "ocean" = "Ocean",
+  "lake" = "Lake",
+  "aq_vegetation" = "Aquatic Vegetation",
+  "sand_gravel_shore" = "Sand Shoreline",
+  "bedrock_shore" = "Bedrock Shoreline",
+  "docks" = "Docks",
+  "loose_gravel" = "Loose Gravel"
+)
+
+# 50m buffer 
+
+# Create a visualization dataframe for 50m buffer
+landcover_50_vis <- landcover %>% 
+  # select landcover extracted with a 50m buffer
+  filter(buffer == 50) %>% 
+  # remove buffer size, total number of pixels, anthropogenic aggregation, natural aggregation
+  select(-2, -3, -15, -16) %>% 
+  # exchange x and y values
+  pivot_longer(
+    cols = -trap_number,
+    names_to = "landcover",
+    values_to = "meters" 
+  ) %>% 
+  # change to factors so they are visualized appropriately 
+  mutate_at(c('landcover'), as.factor) %>% 
+  mutate_at(c('trap_number'), as.factor)
+
+# Plot the coverage of land cover types in a 50m buffer around each trap 
+ggplot(
+  # Add data
+  landcover_50_vis, aes(x = trap_number, y = meters, fill = landcover)) +
+  # bar plot
+  geom_bar(stat = "identity", position = "stack") +
+  # custom colours and names for legend based on landcover values
+  scale_fill_manual(values = landcover_colors,
+                    labels = landcover_names) + 
+  # label
+  labs(
+    x = "Trap Number",
+    y = "Area (m<sup>2</sup>)",
+    fill = "Land Cover",
+    title = "Land Cover Within a 50 Metre Buffer of Each Insect Trap") +
+   ylab(bquote('Area'~(m^2))) +
+  # move legend to the bottom and make it less awful
+   theme(
+    legend.position = "bottom",
+    legend.justification = "left",
+    legend.text = element_text(size = 8),
+    legend.title = element_text(angle = 90, vjust = 0.5, hjust = 0.5)) +
+  guides(fill=guide_legend(ncol=5))
+
+# 100m buffer
+
+# Create a visualization dataframe for 100m buffer
+landcover_100_vis <- landcover %>% 
+  # select landcover extracted with a 100m buffer
+  filter(buffer == 100) %>% 
+  # remove buffer size, total number of pixels, anthropogenic aggregation, natural aggregation
+  select(-2, -3, -15, -16) %>% 
+  # exchange x and y values
+  pivot_longer(
+    cols = -trap_number,
+    names_to = "landcover",
+    values_to = "meters" 
+  ) %>% 
+  # change to factors so they are visualized appropriately 
+  mutate_at(c('landcover'), as.factor) %>% 
+  mutate_at(c('trap_number'), as.factor)
+
+# Plot the coverage of land cover types in a 100m buffer around each trap 
+ggplot(
+  # Add data
+  landcover_100_vis, aes(x = trap_number, y = meters, fill = landcover)) +
+  # bar plot
+  geom_bar(stat = "identity", position = "stack") +
+  # custom colours and names for legend based on landcover values
+  scale_fill_manual(values = landcover_colors,
+                    labels = landcover_names) + 
+  # label
+  labs(
+    x = "Trap Number",
+    y = "Area (m<sup>2</sup>)",
+    fill = "Land Cover",
+    title = "Land Cover Within a 100 Metre Buffer of Each Insect Trap") +
+   ylab(bquote('Area'~(m^2))) +
+  # move legend to the bottom and make it less awful
+   theme(
+    legend.position = "bottom",
+    legend.justification = "left",
+    legend.text = element_text(size = 8),
+    legend.title = element_text(angle = 90, vjust = 0.5, hjust = 0.5)) +
+  guides(fill=guide_legend(ncol=5))
+
+# 250m buffer
+
+# Create a visualization dataframe for 250m buffer
+landcover_250_vis <- landcover %>% 
+  # select landcover extracted with a 250m buffer
+  filter(buffer == 250) %>% 
+  # remove buffer size, total number of pixels, anthropogenic aggregation, natural aggregation
+  select(-2, -3, -15, -16) %>% 
+  # exchange x and y values
+  pivot_longer(
+    cols = -trap_number,
+    names_to = "landcover",
+    values_to = "meters" 
+  ) %>% 
+  # change to factors so they are visualized appropriately 
+  mutate_at(c('landcover'), as.factor) %>% 
+  mutate_at(c('trap_number'), as.factor)
+
+# Plot the coverage of land cover types in a 250m buffer around each trap 
+ggplot(
+  # Add data
+  landcover_250_vis, aes(x = trap_number, y = meters, fill = landcover)) +
+  # bar plot
+  geom_bar(stat = "identity", position = "stack") +
+  # custom colours and names for legend based on landcover values
+  scale_fill_manual(values = landcover_colors,
+                    labels = landcover_names) + 
+  # label
+  labs(
+    x = "Trap Number",
+    y = "Area (m<sup>2</sup>)",
+    fill = "Land Cover",
+    title = "Land Cover Within a 250 Metre Buffer of Each Insect Trap") +
+   ylab(bquote('Area'~(m^2))) +
+  # move legend to the bottom and make it less awful
+   theme(
+    legend.position = "bottom",
+    legend.justification = "left",
+    legend.text = element_text(size = 8),
+    legend.title = element_text(angle = 90, vjust = 0.5, hjust = 0.5)) +
+  guides(fill=guide_legend(ncol=5))
+
+# 500m buffer
+
+# Create a visualization dataframe for 500m buffer
+landcover_500_vis <- landcover %>% 
+  # select landcover extracted with a 500m buffer
+  filter(buffer == 500) %>% 
+  # remove buffer size, total number of pixels, anthropogenic aggregation, natural aggregation
+  select(-2, -3, -15, -16) %>% 
+  # exchange x and y values
+  pivot_longer(
+    cols = -trap_number,
+    names_to = "landcover",
+    values_to = "meters" 
+  ) %>% 
+  # change to factors so they are visualized appropriately 
+  mutate_at(c('landcover'), as.factor) %>% 
+  mutate_at(c('trap_number'), as.factor)
+
+# Plot the coverage of land cover types in a 500m buffer around each trap 
+ggplot(
+  # Add data
+  landcover_500_vis, aes(x = trap_number, y = meters, fill = landcover)) +
+  # bar plot
+  geom_bar(stat = "identity", position = "stack") +
+  # custom colours and names for legend based on landcover values
+  scale_fill_manual(values = landcover_colors,
+                    labels = landcover_names) + 
+  # label
+  labs(
+    x = "Trap Number",
+    y = "Area (m<sup>2</sup>)",
+    fill = "Land Cover",
+    title = "Land Cover Within a 500 Metre Buffer of Each Insect Trap") +
+   ylab(bquote('Area'~(m^2))) +
+  # move legend to the bottom and make it less awful
+   theme(
+    legend.position = "bottom",
+    legend.justification = "left",
+    legend.text = element_text(size = 8),
+    legend.title = element_text(angle = 90, vjust = 0.5, hjust = 0.5)) +
+  guides(fill=guide_legend(ncol=5))
+
+  
+```
+
+## Daily Climate Data Aggregations
+
+### 1. Biweekly
+
+For each biweekly sampling interval, I calculated the mean of (1) Minimum temperature, (2) Maximum temperature, (3) Mean temperature, (4) Precipitation, and (5) Max wind gust - all of the relevant variables available from Environment Canada. This aggregation is similar to Müller et al. (2024). Additionally, I added total precipitation calculated per sampling window (Müller et. al, 2024; Seibold et. al, 2019).
+
+```{r}
+# Function to aggregate daily climate data by the date range of our biweekly sampling intervals (ChatGPT code that I debugged. Used ChatGPT because I didn't know the solution to this problem was making a function).
+aggregate_climate_data <- function(start_date, end_date) {
+  climate %>%
+    filter(date >= start_date & date <= end_date) %>%
+    summarize(
+      sampling_mean_min_temp = mean(daily_min_temp, na.rm = TRUE),
+      sampling_mean_max_temp = mean(daily_max_temp, na.rm = TRUE),
+      sampling_mean_mean_temp = mean(daily_mean_temp, na.rm = TRUE),
+      sampling_mean_precipitation = mean(daily_tot_precip, na.rm = TRUE),
+      sampling_mean_max_gust = mean(daily_max_gust, na.rm = TRUE),
+      sampling_tot_precipitation = sum(daily_tot_precip, na.rm = TRUE)
+    )
+}
+
+# Apply the function for each date range in insect_counts and add the results as new columns
+aggregated_climate <- map2_dfr(insect_counts$range_begin, insect_counts$range_end, aggregate_climate_data)
+
+# Add the aggregated biweekly sampling interval climate data as columns to the insect_counts dataframe
+insect_counts <- bind_cols(insect_counts, aggregated_climate)
+
+# Review additions to check that they make sense.
+str(insect_counts)
+summary(insect_counts)
+
+```
+
+Visualization to confirm that climate data aggregated at the level of biweekly sampling interval is appropriately distributed in time.
+
+```{r}
+# plot of the sampling interval mean minimum temperature grouped by months and compared between years 
+ggplot(
+  # input data
+  data = insect_counts, 
+  mapping = aes(x = collect_month, y = sampling_mean_min_temp)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Month",
+    y = "Mean Minimum Temperature (°C) of the Sampling Intervals",
+    title = "The Mean Minimum Temperature of the Sampling Intervals Compared\nMonthly Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") +
+  # labelling x axis with abbreviated month names
+  scale_x_continuous(
+    breaks = unique(insect_counts$collect_month),  
+    labels = month.abb[unique(insect_counts$collect_month)]
+  ) +
+  # present in a grid of years
+  facet_wrap(collect_year ~ ., scales = 'free', ncol=4)
+
+# plot of the sampling interval mean of the mean temperature grouped by months and compared between years 
+ggplot(
+  # input data
+  data = insect_counts, 
+  mapping = aes(x = collect_month, y = sampling_mean_mean_temp)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Month",
+    y = "Mean of the Mean Temperature (°C) of the Sampling Intervals",
+    title = "The Mean of the Mean Temperature of the Sampling Intervals Compared\nMonthly Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") +
+  # labelling x axis with abbreviated month names
+  scale_x_continuous(
+    breaks = unique(insect_counts$collect_month),  
+    labels = month.abb[unique(insect_counts$collect_month)]
+  ) +
+  # present in a grid of years
+  facet_wrap(collect_year ~ ., scales = 'free', ncol=4)
+
+# plot of the sampling interval mean of the maximum temperature grouped by months and compared between years 
+ggplot(
+  # input data
+  data = insect_counts, 
+  mapping = aes(x = collect_month, y = sampling_mean_max_temp)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Month",
+    y = "Mean Maximum Temperature (°C) of the Sampling Intervals",
+    title = "The Mean Maximum Temperature of the Sampling Intervals Compared\nMonthly Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") +
+  # labelling x axis with abbreviated month names
+  scale_x_continuous(
+    breaks = unique(insect_counts$collect_month),  
+    labels = month.abb[unique(insect_counts$collect_month)]
+  ) +
+  # present in a grid of years
+  facet_wrap(collect_year ~ ., scales = 'free', ncol=4)
+
+# plot of the sampling interval mean of the mean precipitation grouped by months and compared between years 
+ggplot(
+  # input data
+  data = insect_counts, 
+  mapping = aes(x = collect_month, y = sampling_mean_precipitation)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Month",
+    y = "Mean Precipitation (mm) of the Sampling Intervals",
+    title = "The Mean Precipitation of the Sampling Intervals Compared\nMonthly Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") +
+  # labelling x axis with abbreviated month names
+  scale_x_continuous(
+    breaks = unique(insect_counts$collect_month),  
+    labels = month.abb[unique(insect_counts$collect_month)]
+  ) +
+  # present in a grid of years
+  facet_wrap(collect_year ~ ., scales = 'free', ncol=4)
+
+# plot of the sampling interval total precipitation grouped by months and compared between years 
+ggplot(
+  # input data
+  data = insect_counts, 
+  mapping = aes(x = collect_month, y = sampling_tot_precipitation)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Month",
+    y = "Mean Total Precipitation (mm) of the Sampling Intervals",
+    title = "The Total Precipitation of the Sampling Intervals Compared\nMonthly Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") +
+  # labelling x axis with abbreviated month names
+  scale_x_continuous(
+    breaks = unique(insect_counts$collect_month),  
+    labels = month.abb[unique(insect_counts$collect_month)]
+  ) +
+  # present in a grid of years
+  facet_wrap(collect_year ~ ., scales = 'free', ncol=4)
+
+# plot of the sampling interval mean maximum wind gust grouped by months and compared between years 
+ggplot(
+  # input data
+  data = insect_counts, 
+  mapping = aes(x = collect_month, y = sampling_mean_max_gust)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Month",
+    y = "Mean Maximum Wind Gust (km/h) of the Sampling Intervals",
+    title = "The Mean Maximum Wind Gust of the Sampling Intervals Compared\nMonthly Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") +
+  # labelling x axis with abbreviated month names
+  scale_x_continuous(
+    breaks = unique(insect_counts$collect_month),  
+    labels = month.abb[unique(insect_counts$collect_month)]
+  ) +
+  # present in a grid of years
+  facet_wrap(collect_year ~ ., scales = 'free', ncol=4)
+
+```
+
+### 2. Yearly
+
+Calculated the mean temperature, number of frost days (temp \<0°C), number of warm days (daily mean temperature \>20°C), and also the precipitation sum for the winter, growing period, and year (Hallmann et al., 2017; Seibold et al., 2019; Uhler, 2021).
+
+```{r}
+# climate variables summarized by year
+climate_calcs_year <- climate %>% 
+  group_by(year) %>% 
+  summarize(year_mean_temp = mean(daily_mean_temp, na.rm = TRUE),
+         year_days_below_zero = sum(daily_min_temp < 0, na.rm = TRUE),
+         year_days_above_25 = sum(daily_max_temp > 25, na.rm = TRUE),
+         year_tot_precip = sum(daily_tot_precip, na.rm = TRUE)) %>% 
+  # remove extra row of NA, na, NA
+  na.omit()
+
+# change year to be numeric
+climate_calcs_year$year <- as.numeric(climate_calcs_year$year)
+
+# Review to make sense of year trends
+str(climate_calcs_year)
+summary(climate_calcs_year)
+
+```
+
+Visualization to confirm that climate data aggregated at the level of year is appropriately distributed in time.
+
+```{r}
+# change year to be a factor so every year labelled on x-axis
+climate_calcs_year$year <- as.factor(climate_calcs_year$year)
+
+# year mean temperature plot
+ggplot(
+  # input data
+  data = climate_calcs_year, 
+  mapping = aes(x = year, y = year_mean_temp)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Year",
+    y = "Mean Yearly Temperature (ºC)",
+    title = "Mean Yearly Temperature Compared Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") +
+  scale_x_discrete(labels = xlab)
+
+# year days below zero
+ggplot(
+  # input data
+  data = climate_calcs_year, 
+  mapping = aes(x = year, y = year_days_below_zero)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Year",
+    y = "Number of Days Below 0°C",
+    title = "Number of Days Below 0°C Compared Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") 
+
+# year days above 25
+ggplot(
+  # input data
+  data = climate_calcs_year, 
+  mapping = aes(x = year, y = year_days_above_25)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Year",
+    y = "Number of Days Above 25°C",
+    title = "Number of Days Above 25°C Compared Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") 
+
+# total precipitation
+ggplot(
+  # input data
+  data = climate_calcs_year, 
+  mapping = aes(x = year, y = year_tot_precip)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Year",
+    y = "Total Precipitation (mm)",
+    title = "Total Precipitation Compared Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") 
+
+# put year back to numeric for calculations
+climate_calcs_year$year <- c("2017", "2018", "2019", "2020", "2021", "2022", "2023")
+climate_calcs_year$year <- as.numeric(climate_calcs_year$year)
+```
+
+### 3. Monthly
+
+Preparation for final aggregations of climate data. Welti et al. (2022) incorporated monthly means for maximum and minimum temperature, as well as monthly total precipitation.
+
+```{r}
+# climate variables summarized by month 
+climate_calcs_month <-  climate %>% 
+  group_by(year, month) %>% 
+    summarise(month_tot_precip = sum(daily_tot_precip, na.rm = TRUE),
+              month_mean_temp = mean(daily_mean_temp, na.rm = TRUE))
+
+# change year and month to be numeric
+climate_calcs_month$month <- as.numeric(climate_calcs_month$month)
+climate_calcs_month$year <- as.numeric(climate_calcs_month$year)
+
+# check out how these are looking
+str(climate_calcs_month)
+summary(climate_calcs_month)
+
+```
+
+Visualization to confirm that the distribution of these monthly variables makes sense.
+
+```{r, warning=FALSE}
+# change month to be a factor so all labelled on x-axis
+climate_calcs_month$month <- as.factor(climate_calcs_month$month)
+
+# total precipitation
+ggplot(
+  # input data
+  data = climate_calcs_month, 
+  mapping = aes(x = month, y = month_tot_precip)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Month",
+    y = "Total Precipitation (mm)",
+    title = "Total Monthly Precipitation Compared Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") +
+  # present in a grid of years
+  facet_wrap(year ~ ., scales = 'free', ncol=4) +
+  # abbreviate month names on x-axis
+  scale_x_discrete(labels = month.abb) 
+  
+
+# mean temperature
+ggplot(
+  # input data
+  data = climate_calcs_month, 
+  mapping = aes(x = month, y = month_mean_temp)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Month",
+    y = "Mean Temperature (°C)",
+    title = "Mean Monthly Temperature Compared Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") +
+  # present in a grid of years
+  facet_wrap(year ~ ., scales = 'free', ncol= 4) +
+  # abbreviate month names on x-axis
+  scale_x_discrete(labels = month.abb) 
+
+# change month to be a number again
+climate_calcs_month$month <- as.numeric(climate_calcs_month$month)
+
+```
+
+### 4. Previous year winter
+
+Previous year winter (November-February) precipitation and temperature (Hallmann et al., 2017; Seibold et al., 2019).
+
+```{r}
+
+# lets start with the hardest one first, previous winter, which is nov and dec of previous year and jan, feb of current year (ChatGPT for coding support and debugged by me). 
+
+prev_year_winter_precip <- climate_calcs_month %>%
+  # Filter to include only the months November (11), December (12), January (1), and February (2)
+  filter(month %in% c(11, 12, 1, 2)) %>%
+  # Adjust year for Nov and Dec to be counted in the next year's total
+  mutate(adjusted_year = ifelse(month %in% c(11, 12), year + 1, year)) %>%
+  # Filter for Adjusted_Year in the range 2018–2023
+  filter(adjusted_year >= 2018 & adjusted_year <= 2023) %>%
+  # Group by Adjusted_Year
+  group_by(adjusted_year) %>%
+  # Summarize total precipitation for these winter months
+  summarize(prev_year_winter_precip = sum(month_tot_precip, na.rm = TRUE)) %>%
+  # Rename Adjusted_Year back to Year for merging
+  rename(year = adjusted_year)
+
+# Join this to the yearly climate calcs
+climate_calcs_year <- climate_calcs_year %>%
+  left_join(prev_year_winter_precip, by = "year")
+
+# remove working dataframe
+rm(prev_year_winter_precip)
+
+### Now previous year winter temp
+
+# Add a column for "prev_year_winter_temp"
+prev_year_winter_temp <- climate_calcs_month %>%
+  # Filter to include only the months November (11), December (12), January (1), and February (2)
+  filter(month %in% c(11, 12, 1, 2)) %>%
+  # Adjust year for Nov and Dec to be counted in the next year's total
+  mutate(adjusted_year = ifelse(month %in% c(11, 12), year + 1, year)) %>%
+  # Filter for Adjusted_Year in the range 2018–2023
+  filter(adjusted_year >= 2018 & adjusted_year <= 2023) %>%
+  # Group by Adjusted_Year
+  group_by(adjusted_year) %>%
+  # Summarize mean temperature for these winter months
+  summarize(prev_year_winter_temp = mean(month_mean_temp, na.rm = TRUE)) %>%
+  # Rename Adjusted_Year back to Year for merging
+  rename(year = adjusted_year)
+
+# Join this to the yearly climate calcs
+climate_calcs_year <- climate_calcs_year %>%
+  left_join(prev_year_winter_temp, by = "year")
+
+# remove working dataframe
+rm(prev_year_winter_temp)
+
+# check out how this looks
+str(climate_calcs_year)
+summary(climate_calcs_year)
+
+```
+
+Visualization to confirm that the distribution of these previous year variables make sense.
+
+```{r, warning=FALSE}
+# change year to be a factor so every year labelled on x-axis
+climate_calcs_year$year <- as.factor(climate_calcs_year$year)
+
+# previous year winter precipitation
+climate_calcs_year %>% 
+  ggplot(
+  # input data
+  data = climate_calcs_year, 
+  mapping = aes(x = year, y = prev_year_winter_precip)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Year",
+    y = "Total Precipitation (mm) of the Previous Year Winter",
+    title = "Previous Winter Total Precipitation Compared Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none")
+  
+
+# previous year temperature
+ggplot(
+  # input data
+  data = climate_calcs_year, 
+  mapping = aes(x = year, y = prev_year_winter_temp)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Year",
+    y = "Mean Temperature (°C) of the Previous Year Winter",
+    title = "Previous Winter Mean Temperature Compared Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") 
+
+# put year back to numeric for calculations
+climate_calcs_year$year <- c("2017", "2018", "2019", "2020", "2021", "2022", "2023")
+climate_calcs_year$year <- as.numeric(climate_calcs_year$year)
+
+```
+
+### 5. Current year growing season
+
+As done by Seibold et al. (2019).
+
+```{r, message=FALSE}
+# calculate total precipitation during the growing season of the year
+growing_szn_tot_precip <- climate_calcs_month %>% 
+  group_by(year) %>% 
+  filter(month %in% c(3, 4, 5, 6, 7, 8, 9, 10)) %>% 
+  summarize(year_growing_szn_tot_precip = sum(month_tot_precip, na.rm = TRUE)) %>% 
+  # remove extra row of NA, na, NA
+  na.omit()
+
+# join growing season total precipitation back to monthly climate calcs
+climate_calcs_year <- climate_calcs_year %>%
+  left_join(growing_szn_tot_precip) 
+
+# remove working dataframe
+rm(growing_szn_tot_precip)
+
+# Add climate variables summarized by year to insect_counts
+insect_counts <- insect_counts %>% 
+  left_join(climate_calcs_year)
+
+# check out how this looks
+str(climate_calcs_year)
+summary(climate_calcs_year)
+
+```
+
+Visualization to confirm precipitation during the growing season trends are logical.
+
+```{r}
+# change year to be a factor so every year labelled on x-axis
+climate_calcs_year$year <- as.factor(climate_calcs_year$year)
+
+# precipitation during the growing season
+ggplot(
+  # input data
+  data = climate_calcs_year, 
+  mapping = aes(x = year, y = year_growing_szn_tot_precip)) +
+  # scatterplot
+  geom_point() +
+  # label everything
+  labs(
+    x = "Year",
+    y = "Total Precipitation (mm) During the Growing Season",
+    title = "Total Precipitation During the Growing Season Compared Between Years"
+  )  +
+  # improve the look of the x-axis
+  # angle text vertical
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.position = "none") 
+
+# put year back to numeric for calculations
+climate_calcs_year$year <- c("2017", "2018", "2019", "2020", "2021", "2022", "2023")
+climate_calcs_year$year <- as.numeric(climate_calcs_year$year)
+
+```
+
+## Join Data Together into One Dataframe
+
+```{r, warning=FALSE, message=FALSE}
+# join location data to the working dataframe
+insect_counts <- insect_counts %>% 
+  left_join(traps)
+
+# add landcover data to insect_counts
+insect_counts <- insect_counts %>% 
+  left_join(landcover, join_by(trap_number))
+
+# rearrange data
+
+# make list of column names in order
+col_order <- c("trap_number", 
+               "latitude",
+               "longitude",
+               "year",
+               "month",
+               "range_begin",
+               "range_end",
+               "collection_date",
+               "collect_year",
+               "collect_month",
+               "collect_day",
+               "group",
+               "biomass",
+               "biomass_total",
+               "percent_biomass",
+               "individual_count",
+               "count_total",
+               "sampling_mean_min_temp",
+               "sampling_mean_max_temp", 
+               "sampling_mean_mean_temp",
+               "sampling_mean_precipitation",
+               "sampling_mean_max_gust",
+               "sampling_tot_precipitation",
+               "year_mean_temp",
+               "year_days_below_zero",
+               "year_days_above_25",
+               "year_tot_precip",
+               "prev_year_winter_precip",
+               "prev_year_winter_temp",
+               "year_growing_szn_tot_precip",
+               "buffer",
+               "total_area",
+               "exposed_soil",
+               "grass",
+               "herb",
+               "shrub_small_tree",
+               "deciduous_tree",
+               "coniferous_tree",
+               "pavement_packed_gravel",
+               "road",
+               "buildings",
+               "agriculture",
+               "exposed_bedrock",
+               "ocean",
+               "lake",
+               "aq_vegetation",
+               "sand_gravel_shore",
+               "bedrock_shore",
+               "docks",
+               "loose_gravel",
+               "natural",
+               "anthropogenic")
+
+# rearrange columns
+insect_counts <- insect_counts[, col_order]
+
+# Review additions to check that they make sense.
+str(insect_counts)
+summary(insect_counts)
+
+```
+
+## Export Final Product as .csv File
+
+```{r, eval=FALSE}
+
+write.csv(insect_counts2,"~/Downloads/2022.12.07.MetchBiomass_InsectCounts_Climate_Location_Landcover.csv", row.names = FALSE, fileEncoding = "UTF-8")
+```
+
+## References
+
+Blüthgen, N., Staab, M., Achury, R., & Weisser, W. W. (2022). Unravelling insect declines: Can space replace time? *Biology Letters*, *18*(4), 20210666. <https://doi.org/10.1098/rsbl.2021.0666>
+
+Gebert, F., Bollmann, K., Schuwirth, N., Duelli, P., Weber, D., & Obrist, M. K. (2024). Similar temporal patterns in insect richness, abundance and biomass across major habitat types. *Insect Conservation and Diversity*, *17*(1), 139–154. <https://doi.org/10.1111/icad.12700>
+
+Innes, F. (2024). Conservation of biodiversity: Insect species abundance and biomass trends in a rural municipality. Unpublished report. Directed Studies/BIOL490B, University of Victoria.
+
+Hallmann, C. A., Sorg, M., Jongejans, E., Siepel, H., Hofland, N., Schwan, H., Stenmans, W., Müller, A., Sumser, H., Hörren, T., Goulson, D., & Kroon, H. de. (2017). More than 75 percent decline over 27 years in total flying insect biomass in protected areas. *PLOS ONE*, *12*(10), e0185809. <https://doi.org/10.1371/journal.pone.0185809>
+
+Hallmann, C. A., Zeegers, T., van Klink, R., Vermeulen, R., van Wielink, P., Spijkers, H., van Deijk, J., van Steenis, W., & Jongejans, E. (2020). Declining abundance of beetles, moths and caddisflies in the Netherlands. *Insect Conservation and Diversity*, *13*(2), 127–139. <https://doi.org/10.1111/icad.12377>
+
+Li, H., & Wilkins, K. T. (2022). Predator-prey relationship between urban bats and insects Impacted by both artificial light at night and spatial clutter. *Biology*, *11*(6), Article 6. <https://doi.org/10.3390/biology11060829>
+
+Müller, J., Hothorn, T., Yuan, Y., Seibold, S., Mitesser, O., Rothacher, J., Freund, J., Wild, C., Wolz, M., & Menzel, A. (2024). Weather explains the decline and rise of insect biomass over 34 years. *Nature*, *628*(8007), 349–354. <https://doi.org/10.1038/s41586-023-06402-z>
+
+Nikel, K. (2019). Estimating flying insect biomass and its spatiotemporal distribution in Metchosin: Biodiversity on southern Vancouver Island. Unpublished report. Honours Thesis, University of Victoria.
+
+Seibold, S., Gossner, M. M., Simons, N. K., Blüthgen, N., Müller, J., Ambarlı, D., Ammer, C., Bauhus, J., Fischer, M., Habel, J. C., Linsenmair, K. E., Nauss, T., Penone, C., Prati, D., Schall, P., Schulze, E.-D., Vogt, J., Wöllauer, S., & Weisser, W. W. (2019). Arthropod decline in grasslands and forests is associated with landscape-level drivers. *Nature*, *574*(7780), 671–674. <https://doi.org/10.1038/s41586-019-1684-3>
+
+Svenningsen, C. S., Peters, B., Bowler, D. E., Dunn, R. R., Bonn, A., & Tøttrup, A. P. (2024). Insect biomass shows a stronger decrease than species richness along urban gradients. *Insect Conservation and Diversity*, *17*(2), 182–188. <https://doi.org/10.1111/icad.12694>
+
+Uhler, J., Redlich, S., Zhang, J., Hothorn, T., Tobisch, C., Ewald, J., Thorn, S., Seibold, S., Mitesser, O., Morinière, J., Bozicevic, V., Benjamin, C. S., Englmeier, J., Fricke, U., Ganuza, C., Haensel, M., Riebl, R., Rojas-Botero, S., Rummler, T., … Müller, J. (2021). Relationship of insect biomass and richness with land use along a climate gradient. *Nature Communications*, *12*(1), 5946. <https://doi.org/10.1038/s41467-021-26181-3>
+
+Uphus, L., Uhler, J., Tobisch, C., Rojas-Botero, S., Lüpke, M., Benjamin, C., Englmeier, J., Fricke, U., Ganuza, C., Haensel, M., Redlich, S., Zhang, J., Müller, J., & Menzel, A. (2023). Earlier and more uniform spring green-up linked to lower insect richness and biomass in temperate forests. *Communications Biology*, *6*(1), 1–11. <https://doi.org/10.1038/s42003-023-05422-9>
+
+Welti, E. A. R., Zajicek, P., Frenzel, M., Ayasse, M., Bornholdt, T., Buse, J., Classen, A., Dziock, F., Engelmann, R. A., Englmeier, J., Fellendorf, M., Förschler, M. I., Fricke, U., Ganuza, C., Hippke, M., Hoenselaar, G., Kaus-Thiel, A., Kerner, J., Kilian, D., … Haase, P. (2022). Temperature drives variation in flying insect biomass across a German malaise trap network. *Insect Conservation and Diversity*, *15*(2), 168–180. <https://doi.org/10.1111/icad.12555>
