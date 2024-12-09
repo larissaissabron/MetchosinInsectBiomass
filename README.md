@@ -1,14 +1,13 @@
 This repository contains the data products used within and resulting from data preparation efforts in Fall 2024 for analyzing insect biomass spatiotemporal trends in Metchosin.
 
-Final Data Products
+Table 1: Final Data Products
 | File | Description |
 |---|---|
 | 2024.12.08.MetchBiomass_InsectCounts_Climate_Location_Landcover.csv	| CSV: Final data product for modeling insect biomass spatiotemporal trends in Metchosin. |
 | 2024.12.08_MetchBiomass.Rmd	| R Markdown: Report accompanying the final data product, for use in RStudio. |
 | 2024.12.08_MetchBiomass.html	| HTML: Report in HTML format, viewable in a web browser after downloading. |
 
-These raw datasets were used in the R Markdown script to create the final data products.
-
+Table 2: These raw datasets were used in the R Markdown script to create the final data products.
 | File | Description |
 |---|---|
 | Metchosin Project Metchosin Data.csv	| CSV: Insect biomass and individual count data shared by Freya Innes. |
